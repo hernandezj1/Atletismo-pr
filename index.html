@@ -16,16 +16,16 @@
     <div class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Encabezado -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-blue-900 mb-4">Récords de Atletismo de Puerto Rico 🇵🇷</h1>
+            <h1 class="text-4xl font-bold text-blue-900 mb-4">Récords de Atletismo de Puerto Rico</h1>
             
             <!-- Párrafo de introducción -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-4xl mx-auto">
                 <div id="intro-display" class="text-gray-700 leading-relaxed text-lg">
-                        Esta no es una base de datos oficial. Fue compilada por mí, José Hernández, 
-    entrenador en Cupey Track y entrenador de lanzamientos Nivel II certificado por USATF. 
-    Utilizamos recursos desarrollados por Pedro Aníbal Díaz, a quien damos crédito por su 
-    trabajo que nos permite mantener y actualizar estos récords en la actualidad. 
-    Nuestro objetivo es continuar su legado más allá de la temporada 2023
+                    Esta no es una base de datos oficial. Fue compilada por José Hernández 
+                    entrenador en Cupey Track y entrenador de lanzamientos Nivel II certificado por USATF. 
+                    Utilizamos recursos desarrollados por Pedro Aníbal Díaz, a quien damos crédito por su 
+                    trabajo que nos permite mantener y actualizar estos récords en la actualidad. 
+                    Nuestro objetivo fue continuar su legado más allá de la temporada 2023 los cuales están resumidos en su libro <i>Marcas y Medallas</i>.
                 </div>
             </div>
         </div>
@@ -50,38 +50,6 @@
                             <option value="100m">100m</option>
                             <option value="200m">200m</option>
                             <option value="400m">400m</option>
-                        </optgroup>
-                        <optgroup label="Medio Fondo">
-                            <option value="800m">800m</option>
-                            <option value="1500m">1500m</option>
-                            <option value="Mile">Milla</option>
-                        </optgroup>
-                        <optgroup label="Fondo">
-                            <option value="3000m">3000m</option>
-                            <option value="5000m">5000m</option>
-                            <option value="10000m">10000m</option>
-                            <option value="Marathon">Maratón</option>
-                        </optgroup>
-                        <optgroup label="Vallas">
-                            <option value="110mH">110m Vallas</option>
-                            <option value="400mH">400m Vallas</option>
-                            <option value="3000mSC">3000m Obstáculos</option>
-                        </optgroup>
-                        <optgroup label="Saltos">
-                            <option value="HJ">Salto de Altura</option>
-                            <option value="PV">Salto con Pértiga</option>
-                            <option value="LJ">Salto de Longitud</option>
-                            <option value="TJ">Salto Triple</option>
-                        </optgroup>
-                        <optgroup label="Lanzamientos">
-                            <option value="SP">Lanzamiento de Bala</option>
-                            <option value="DT">Lanzamiento de Disco</option>
-                            <option value="HT">Lanzamiento de Martillo</option>
-                            <option value="JT">Lanzamiento de Jabalina</option>
-                        </optgroup>
-                        <optgroup label="Pruebas Combinadas">
-                            <option value="Decathlon">Decatlón</option>
-                            <option value="Heptathlon">Heptatlón</option>
                         </optgroup>
                     </select>
                 </div>
@@ -132,17 +100,32 @@
         const recordsContainer = document.getElementById('records-container');
         const errorMessage = document.getElementById('error-message');
 
-        const SHEETS = {
-            male: "https://docs.google.com/spreadsheets/d/1RX0naMDsW9KWmqECB2Tfu1W9PMZfNGk5Wo9fdnqF0ss/gviz/tq?tqx=out:json&sheet=",
-            female: "https://docs.google.com/spreadsheets/d/1Qxa6GV7D1orwNdHuYUjGpEAyWm9OPU0UFxYoWmrAPhs/gviz/tq?tqx=out:json&sheet="
+        // Base URL para hojas publicadas
+        const BASE_URL = {
+            male: "https://docs.google.com/spreadsheets/d/e/XXXX/pub?gid=GID&single=true&output=csv",
+            female: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRAL3BpfUCSYUdrCwTe05sgn6RJ7W6BUm6XOlCGsNESxJZi5hdHtuWQu_VoI9dV271u-KWfJaDC7ZoO/pub?gid=GID&single=true&output=csv"
+        };
+
+        // Aquí añades los gid de cada pestaña
+        const gidMap = {
+            male: {
+                "100m": "0",
+                "200m": "1017868685",
+                "400m": "731359828"
+            },
+            female: {
+                "100m": "0",
+                "200m": "1017868685",
+                "400m": "731359828"
+            }
         };
 
         async function loadRecords(gender, event) {
             try {
-                const url = SHEETS[gender] + encodeURIComponent(event);
+                const url = BASE_URL[gender].replace("GID", gidMap[gender][event]);
                 const res = await fetch(url);
                 const text = await res.text();
-                const json = JSON.parse(text.substr(47).slice(0, -2));
+                const rows = text.trim().split("\n").map(r => r.split(","));
 
                 tableHeaders.innerHTML = "";
                 recordsTbody.innerHTML = "";
@@ -155,14 +138,15 @@
                     tableHeaders.appendChild(th);
                 });
 
-                json.table.rows.forEach((row, index) => {
+                rows.slice(1).forEach((row, index) => {
                     const tr = document.createElement("tr");
                     tr.className = index % 2 === 0 ? "bg-white" : "bg-gray-50";
-                    row.c.forEach((cell, cellIndex) => {
+
+                    row.forEach((cell, i) => {
                         const td = document.createElement("td");
                         td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
-                        if (cellIndex === 0) td.classList.add("font-medium");
-                        td.textContent = cell ? cell.v : "";
+                        if (i === 0) td.classList.add("font-medium");
+                        td.textContent = cell;
                         tr.appendChild(td);
                     });
                     recordsTbody.appendChild(tr);
@@ -170,6 +154,7 @@
 
                 loadingDiv.classList.add("hidden");
                 recordsContainer.classList.remove("hidden");
+
             } catch (error) {
                 loadingDiv.classList.add("hidden");
                 errorMessage.classList.remove("hidden");
