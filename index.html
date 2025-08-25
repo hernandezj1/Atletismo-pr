@@ -121,45 +121,64 @@
         };
 
         async function loadRecords(gender, event) {
-            try {
-                const url = BASE_URL[gender].replace("GID", gidMap[gender][event]);
-                const res = await fetch(url);
-                const text = await res.text();
-                const rows = text.trim().split("\n").map(r => r.split(","));
-
-                tableHeaders.innerHTML = "";
-                recordsTbody.innerHTML = "";
-
-                const headers = ["Ranking", "Marca", "Atleta", "Fecha de Nacimiento", "Lugar", "Fecha"];
-                headers.forEach(header => {
-                    const th = document.createElement("th");
-                    th.className = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
-                    th.textContent = header;
-                    tableHeaders.appendChild(th);
-                });
-
-                rows.slice(1).forEach((row, index) => {
-                    const tr = document.createElement("tr");
-                    tr.className = index % 2 === 0 ? "bg-white" : "bg-gray-50";
-
-                    row.forEach((cell, i) => {
-                        const td = document.createElement("td");
-                        td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
-                        if (i === 0) td.classList.add("font-medium");
-                        td.textContent = cell;
-                        tr.appendChild(td);
+                try {
+                    const url = BASE_URL[gender].replace("GID", gidMap[gender][event]);
+                    const res = await fetch(url);
+                    const text = await res.text();
+        
+                    // Parsear CSV correctamente (respeta comillas y comas internas)
+                    const rows = text.trim().split("\n").map(line => {
+                        return line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
+                                  .map(cell => cell.replace(/^"|"$/g, "")); // limpiar comillas
                     });
-                    recordsTbody.appendChild(tr);
-                });
-
-                loadingDiv.classList.add("hidden");
-                recordsContainer.classList.remove("hidden");
-
-            } catch (error) {
-                loadingDiv.classList.add("hidden");
-                errorMessage.classList.remove("hidden");
+        
+                    tableHeaders.innerHTML = "";
+                    recordsTbody.innerHTML = "";
+        
+                    const headers = ["Ranking", "Marca", "Atleta", "Fecha de Nacimiento", "Lugar", "Fecha"];
+                    headers.forEach(header => {
+                        const th = document.createElement("th");
+                        th.className = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
+                        th.textContent = header;
+                        tableHeaders.appendChild(th);
+                    });
+        
+                    rows.slice(1).forEach((row, index) => {
+                        const tr = document.createElement("tr");
+                        tr.className = index % 2 === 0 ? "bg-white" : "bg-gray-50";
+        
+                        row.forEach((cell, i) => {
+                            const td = document.createElement("td");
+                            td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
+                            if (i === 0) td.classList.add("font-medium");
+        
+                            // Si es un HYPERLINK de Google Sheets
+                            const hyperlinkMatch = cell.match(/HYPERLINK\("([^"]+)","([^"]+)"\)/i);
+                            if (hyperlinkMatch) {
+                                const a = document.createElement("a");
+                                a.href = hyperlinkMatch[1];
+                                a.textContent = hyperlinkMatch[2];
+                                a.className = "text-blue-600 hover:underline";
+                                a.target = "_blank";
+                                td.appendChild(a);
+                            } else {
+                                td.textContent = cell;
+                            }
+        
+                            tr.appendChild(td);
+                        });
+                        recordsTbody.appendChild(tr);
+                    });
+        
+                    loadingDiv.classList.add("hidden");
+                    recordsContainer.classList.remove("hidden");
+        
+                } catch (error) {
+                    console.error(error);
+                    loadingDiv.classList.add("hidden");
+                    errorMessage.classList.remove("hidden");
+                }
             }
-        }
 
         function updateTable() {
             const gender = genderSelect.value;
