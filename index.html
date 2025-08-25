@@ -99,14 +99,12 @@
         const loadingDiv = document.getElementById('loading');
         const recordsContainer = document.getElementById('records-container');
         const errorMessage = document.getElementById('error-message');
-
-        // Base URL para hojas publicadas
+    
         const BASE_URL = {
             male: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhv1K_vy1vCWRlKtStztU-JwmjzyAT4BgNt6oYb-Bhfe8-w2mKT6RdpXEqnPaemrviZLzWgDT6rKoB/pub?gid=GID&single=true&output=csv",
             female: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRAL3BpfUCSYUdrCwTe05sgn6RJ7W6BUm6XOlCGsNESxJZi5hdHtuWQu_VoI9dV271u-KWfJaDC7ZoO/pub?gid=GID&single=true&output=csv"
         };
-
-        // Aquí añades los gid de cada pestaña
+    
         const gidMap = {
             male: {
                 "100m": "0",
@@ -119,83 +117,94 @@
                 "400m": "731359828"
             }
         };
-
+    
         async function loadRecords(gender, event) {
-                try {
-                    const url = BASE_URL[gender].replace("GID", gidMap[gender][event]);
-                    const res = await fetch(url);
-                    const text = await res.text();
-        
-                    // Parsear CSV correctamente (respeta comillas y comas internas)
-                    const rows = text.trim().split("\n").map(line => {
-                        return line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
-                                  .map(cell => cell.replace(/^"|"$/g, "")); // limpiar comillas
-                    });
-        
-                    tableHeaders.innerHTML = "";
-                    recordsTbody.innerHTML = "";
-        
-                    const headers = ["Ranking", "Marca", "Atleta", "Fecha de Nacimiento", "Lugar", "Fecha"];
-                    headers.forEach(header => {
-                        const th = document.createElement("th");
-                        th.className = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
-                        th.textContent = header;
-                        tableHeaders.appendChild(th);
-                    });
-        
-                    rows.slice(1).forEach((row, index) => {
-                        const tr = document.createElement("tr");
-                        tr.className = index % 2 === 0 ? "bg-white" : "bg-gray-50";
-        
-                        row.forEach((cell, i) => {
-                            const td = document.createElement("td");
-                            td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
-                            if (i === 0) td.classList.add("font-medium");
-        
-                            // Si es un HYPERLINK de Google Sheets
+            try {
+                const url = BASE_URL[gender].replace("GID", gidMap[gender][event]);
+                const res = await fetch(url);
+                const text = await res.text();
+    
+                // Split CSV respecting quotes → keeps full names intact
+                const rows = text.trim().split("\n").map(line => {
+                    return line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
+                              .map(cell => cell.replace(/^"|"$/g, "")); 
+                });
+    
+                tableHeaders.innerHTML = "";
+                recordsTbody.innerHTML = "";
+    
+                const headers = ["Ranking", "Marca", "Atleta", "Fecha de Nacimiento", "Lugar", "Fecha"];
+                headers.forEach(header => {
+                    const th = document.createElement("th");
+                    th.className = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
+                    th.textContent = header;
+                    tableHeaders.appendChild(th);
+                });
+    
+                rows.slice(1).forEach((row, index) => {
+                    const tr = document.createElement("tr");
+                    tr.className = index % 2 === 0 ? "bg-white" : "bg-gray-50";
+    
+                    row.forEach((cell, i) => {
+                        const td = document.createElement("td");
+                        td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
+                        if (i === 0) td.classList.add("font-medium");
+    
+                        if (i === 2) {
+                            // Detectar HYPERLINK
                             const hyperlinkMatch = cell.match(/HYPERLINK\("([^"]+)","([^"]+)"\)/i);
                             if (hyperlinkMatch) {
                                 const a = document.createElement("a");
                                 a.href = hyperlinkMatch[1];
-                                a.textContent = hyperlinkMatch[2];
+                                a.textContent = hyperlinkMatch[2]; // muestra el texto completo
+                                a.className = "text-blue-600 hover:underline";
+                                a.target = "_blank";
+                                td.appendChild(a);
+                            } else if (cell.startsWith("http")) {
+                                const a = document.createElement("a");
+                                a.href = cell;
+                                a.textContent = cell;
                                 a.className = "text-blue-600 hover:underline";
                                 a.target = "_blank";
                                 td.appendChild(a);
                             } else {
                                 td.textContent = cell;
                             }
-        
-                            tr.appendChild(td);
-                        });
-                        recordsTbody.appendChild(tr);
+                        } else {
+                            td.textContent = cell;
+                        }
+    
+                        tr.appendChild(td);
                     });
-        
-                    loadingDiv.classList.add("hidden");
-                    recordsContainer.classList.remove("hidden");
-        
-                } catch (error) {
-                    console.error(error);
-                    loadingDiv.classList.add("hidden");
-                    errorMessage.classList.remove("hidden");
-                }
+                    recordsTbody.appendChild(tr);
+                });
+    
+                loadingDiv.classList.add("hidden");
+                recordsContainer.classList.remove("hidden");
+    
+            } catch (error) {
+                console.error(error);
+                loadingDiv.classList.add("hidden");
+                errorMessage.classList.remove("hidden");
             }
-
+        }
+    
         function updateTable() {
             const gender = genderSelect.value;
             const event = eventSelect.value;
             const genderText = gender === "male" ? "Masculino" : "Femenino";
-
+    
             tableTitle.textContent = `Top 10 - ${genderText} ${event}`;
             loadingDiv.classList.remove("hidden");
             recordsContainer.classList.add("hidden");
             errorMessage.classList.add("hidden");
-
+    
             loadRecords(gender, event);
         }
-
+    
         genderSelect.addEventListener("change", updateTable);
         eventSelect.addEventListener("change", updateTable);
-
+    
         updateTable();
     </script>
 </body>
