@@ -121,7 +121,7 @@
                 const res = await fetch(url);
                 const text = await res.text();
     
-                // CSV parser (handles quotes and commas)
+                // CSV parser (handles commas and quotes)
                 const rows = text.trim().split("\n").map(line => {
                     return line.match(/("([^"]|"")*"|[^,]*)/g)
                                .map(cell => cell.replace(/^"|"$/g, "").replace(/""/g, '"'));
@@ -130,6 +130,7 @@
                 tableHeaders.innerHTML = "";
                 recordsTbody.innerHTML = "";
     
+                // First row = headers
                 const headers = rows[0];
                 headers.forEach(header => {
                     const th = document.createElement("th");
@@ -138,14 +139,14 @@
                     tableHeaders.appendChild(th);
                 });
     
+                // Remaining rows = data
                 rows.slice(1).forEach((row, index) => {
                     const tr = document.createElement("tr");
                     tr.className = index % 2 === 0 ? "bg-white" : "bg-gray-50";
     
-                    row.forEach((cell, i) => {
+                    row.forEach(cell => {
                         const td = document.createElement("td");
                         td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
-                        if (i === 0) td.classList.add("font-medium");
                         td.textContent = cell;
                         tr.appendChild(td);
                     });
@@ -182,3 +183,5 @@
     </script>
 </body>
 </html>
+
+
