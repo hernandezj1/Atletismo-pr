@@ -18,7 +18,6 @@
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-900 mb-4">Récords de Atletismo de Puerto Rico</h1>
             
-            <!-- Párrafo de introducción -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-8 max-w-4xl mx-auto">
                 <div id="intro-display" class="text-gray-700 leading-relaxed text-lg">
                     Esta no es una base de datos oficial. Fue compilada por José Hernández 
@@ -33,7 +32,6 @@
         <!-- Controles -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- Selección de género -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-3">Categoría</label>
                     <select id="gender-select" class="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium">
@@ -42,7 +40,6 @@
                     </select>
                 </div>
 
-                <!-- Selección de evento -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-3">Evento</label>
                     <select id="event-select" class="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium">
@@ -56,7 +53,7 @@
             </div>
         </div>
 
-        <!-- Tabla de Récords -->
+        <!-- Tabla -->
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="bg-blue-600 text-white p-4">
                 <h2 id="table-title" class="text-xl font-bold">Top 10 - Masculino 100m</h2>
@@ -84,7 +81,7 @@
             </div>
         </div>
 
-        <!-- Pie de página -->
+        <!-- Pie -->
         <div class="text-center mt-8 text-gray-600">
             <p class="text-sm">Datos provenientes de récords oficiales de Atletismo de Puerto Rico</p>
         </div>
@@ -124,16 +121,16 @@
                 const res = await fetch(url);
                 const text = await res.text();
     
-                // Split CSV respecting quotes → keeps full names intact
+                // CSV parser (handles quotes and commas)
                 const rows = text.trim().split("\n").map(line => {
-                    return line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)
-                              .map(cell => cell.replace(/^"|"$/g, "")); 
+                    return line.match(/("([^"]|"")*"|[^,]*)/g)
+                               .map(cell => cell.replace(/^"|"$/g, "").replace(/""/g, '"'));
                 });
     
                 tableHeaders.innerHTML = "";
                 recordsTbody.innerHTML = "";
     
-                const headers = ["Ranking", "Marca", "Atleta", "Fecha de Nacimiento", "Lugar", "Fecha"];
+                const headers = rows[0];
                 headers.forEach(header => {
                     const th = document.createElement("th");
                     th.className = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
@@ -149,31 +146,7 @@
                         const td = document.createElement("td");
                         td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-900";
                         if (i === 0) td.classList.add("font-medium");
-    
-                        if (i === 2) {
-                            // Detectar HYPERLINK
-                            const hyperlinkMatch = cell.match(/HYPERLINK\("([^"]+)","([^"]+)"\)/i);
-                            if (hyperlinkMatch) {
-                                const a = document.createElement("a");
-                                a.href = hyperlinkMatch[1];
-                                a.textContent = hyperlinkMatch[2]; // muestra el texto completo
-                                a.className = "text-blue-600 hover:underline";
-                                a.target = "_blank";
-                                td.appendChild(a);
-                            } else if (cell.startsWith("http")) {
-                                const a = document.createElement("a");
-                                a.href = cell;
-                                a.textContent = cell;
-                                a.className = "text-blue-600 hover:underline";
-                                a.target = "_blank";
-                                td.appendChild(a);
-                            } else {
-                                td.textContent = cell;
-                            }
-                        } else {
-                            td.textContent = cell;
-                        }
-    
+                        td.textContent = cell;
                         tr.appendChild(td);
                     });
                     recordsTbody.appendChild(tr);
